@@ -1,0 +1,42 @@
+#! /usr/bin/ruby
+#
+# External Node script for Puppet with Noah
+#
+# == puppet.conf Configuration
+#
+#  [main]
+#  external_nodes = /path/to/external_node
+#  node_terminus = exec
+
+require 'rubygems'
+require 'yaml'
+require 'json'
+require 'uri'
+require 'net/http'
+
+NOAH_URL = "http://localhost:9292"
+
+if ARGV.size == 0
+  STDERR.puts "Error: must specify a node to query"; exit 1
+else
+  NODE = ARGV.first
+end
+
+url = ENV['NOAH_URL'] || NOAH_URL
+uri = URI.parse("#{url}/hosts/#{NODE}")
+
+request = Net::HTTP::Get.new(uri.path, initheader = {'Accept' => 'text/json'})
+http = Net::HTTP.new(uri.host, uri.port)
+result = http.start {|http| http.request(request)}
+
+case result
+when Net::HTTPSuccess
+  res = JSON.parse(result.body)
+  output = {}
+  output['classes'] = res["services"].keys
+  puts output.to_yaml
+  exit 0
+else
+  STDERR.puts "Error: #{result.code} #{result.message.strip} for node #{NODE}."
+  exit 1
+end
