@@ -1,5 +1,5 @@
-Puppet::Parser::Functions::newfunction(:noah_put, :doc => "
-Updates values to  Noah. Takes a Noah URL, request type and data and returns data from a running Noah instance:
+Puppet::Parser::Functions::newfunction(:noah_put, :type => :rvalue, :doc => "
+Returns values from Noah. Takes a Noah URL, request type and data and returns data from a running Noah instance:
 
     noah_put($noah_url, $type, $data)
 
@@ -15,37 +15,40 @@ This will retrieve the host information for the `$hostname` variable from the No
     require 'rest-client'
     require 'uri'
   rescue LoadError => detail
-    Puppet.info "noah_put(): You need to install the rest-client gem to use the noah function"
+    Puppet.info "noah_put(): You need to install the rest-client gem to use the noah_put function"
   end
 
-  raise ArgumentError, ("noah_put(): wrong number of arguments (#{args.length}; must be 3)") if args.length != 3
+  raise ArgumentError, ("noah_put(): Wrong number of arguments (#{args.length}; must be 3)") if args.length != 3
 
-  noah_url, request, data = URI.parse(args[0]), args[1], args[2]
+  noah_url, type, data = URI.parse(args[0]), args[1], args[2]
 
-  raise ArgumentError, ("noah_put(): request type #{request} invalid. Valid request types are #{request_types.join(',')}") unless request_types.include?(request)
+  raise ArgumentError, ("noah_put(): Request type #{type} invalid. Valid request types are #{request_types.join(',')}") unless request_types.include?(type)
 
-  case request
+  case type
   when "host"
-    resource = "/hosts/#{data}"
+    resource = "/hosts/#{lookupvar('fqdn')}"
+    status = [ "up", "down"]
+    raise ArgumentError, ("noah_put(): Host status must be 'up' or 'down'") unless status.include?(data)
+    payload = { "status" => "#{data}" }
   when "application"
     resource = "/applications/#{data}"
+    payload = { "name" => "#{data}" }
   when "service"
-    resource = "/services/#{data}"
+    resource = "/services/#{data}/#{lookupvar('fqdn')}"
+    payload = { "status" => "up", "host_status" => "up" }
   when "configuration"
     resource = "/configurations/#{data}"
+    payload = { "format" => "string", "body" => "#{data}" }
   end
 
-  RestClient.put("#{noah_url}#{resource}"){ |response, request, result, &block|
+  RestClient.put("#{noah_url}#{resource}", payload.to_json){ |response, request, result, &block|
     case response.code
     when 200
-      Puppet.debug "noah_put(): Returned #{request} #{data} from Noah server #{noah_url}"
-      response
+      Puppet.info "noah_put(): Posted #{type} #{data} to Noah server #{noah_url}"
     when 404
-      Puppet.info "noah_put(): No #{data} of type #{request} available on Noah server #{noah_url}"
-    when 500
-      Puppet.info "noah_put(): Noah server #{noah_url} returned error"
+      Puppet.info "noah_put(): No #{type} #{data} available on Noah server #{noah_url}"
     else
-      response.return!(request, result, &block)
+      Puppet.err "noah_put(): Query failed #{request}, #{result}"
     end
   }
 end

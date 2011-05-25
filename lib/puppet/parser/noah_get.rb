@@ -15,16 +15,16 @@ This will retrieve the host information for the `$hostname` variable from the No
     require 'rest-client'
     require 'uri'
   rescue LoadError => detail
-    Puppet.info "noah_get(): You need to install the rest-client gem to use the noah function"
+    Puppet.info "noah_get(): You need to install the rest-client gem to use the noah_get function"
   end
 
-  raise ArgumentError, ("noah_get(): wrong number of arguments (#{args.length}; must be 3)") if args.length != 3
+  raise ArgumentError, ("noah_get(): Wrong number of arguments (#{args.length}; must be 3)") if args.length != 3
 
-  noah_url, request, data = URI.parse(args[0]), args[1], args[2]
+  noah_url, type, data = URI.parse(args[0]), args[1], args[2]
 
-  raise ArgumentError, ("noah_get(): request type #{request} invalid. Valid request types are #{request_types.join(',')}") unless request_types.include?(request)
+  raise ArgumentError, ("noah_get(): Request type #{type} invalid. Valid request types are #{request_types.join(',')}") unless request_types.include?(type)
 
-  case request
+  case type
   when "host"
     resource = "/hosts/#{data}"
   when "application"
@@ -38,14 +38,15 @@ This will retrieve the host information for the `$hostname` variable from the No
   RestClient.get("#{noah_url}#{resource}"){ |response, request, result, &block|
     case response.code
     when 200
-      Puppet.debug "noah_get(): Returned #{request} #{data} from Noah server #{noah_url}"
-      response
+      Puppet.debug "noah_get(): Returned #{type} #{data} from Noah server #{noah_url}"
+      output = JSON.parse(response)
+      output
     when 404
-      Puppet.info "noah_get(): No #{data} of type #{request} available on Noah server #{noah_url}"
+      Puppet.info "noah_get(): No #{type} #{data} available on Noah server #{noah_url}"
     when 500
       Puppet.info "noah_get(): Noah server #{noah_url} returned error"
     else
-      response.return!(request, result, &block)
+      Puppet.err "noah_get(): Query failed #{request}, #{result}"
     end
   }
 end
