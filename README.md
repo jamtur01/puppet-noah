@@ -16,7 +16,10 @@ Installation
 ------------
 
 Install `puppet-noah` as a module in your Puppet master's module
-path.
+path. You then need to use `pluginsync` to sync the functions and fact onto your master.
+
+To use the ENC you can copy the ENC script to somewhere appropriate and enable external node 
+configuration in your Puppet master's `puppet.conf` configuration file.
 
 Usage
 -----
