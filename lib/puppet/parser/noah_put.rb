@@ -1,13 +1,15 @@
 Puppet::Parser::Functions::newfunction(:noah_put, :type => :rvalue, :doc => "
-Returns values from Noah. Takes a Noah URL, request type and data and returns data from a running Noah instance:
+Puts values into Noah. Takes a Noah URL, request type and data and puts data into a running Noah instance:
 
     noah_put($noah_url, $type, $data)
 
-Where `$noah_url` is the URL of a valid Noah server, `$type` is one of application, host, configuration or service and `$data` is the name of the data type to return.
+Where `$noah_url` is the URL of a valid Noah server, `$type` is one of application, host, configuration or service and `$data` is the data to send to the 
+server.
 
-    noah_put('http://localhost:9292', host, $hostname)
+    noah_put('http://localhost:9292', host, 'up')
 
-This will retrieve the host information for the `$hostname` variable from the Noah server at `http://localhost:9292`.  
+This will create a host using the `fqdn` fact as the hostname with a status of `up` (valid statuses are `up` or `down`) to the Noah server 
+at `http://localhost:9292`.  You can similarly create applications, services and configuration items.
 ") do |args|
 
   request_types = ["host", "service", "application", "configuration"]
