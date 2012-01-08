@@ -1,0 +1,5 @@
+name 'puppet-noah'
+version '0.0.1'
+license 'Apache 2.0'
+summary 'Puppet integration with Noah'
+project_page 'https://github.com/jamtur01/puppet-noah'
