@@ -40,6 +40,17 @@ This will retrieve the host information for the `$hostname` variable from the No
     when 200
       Puppet.debug "noah_get(): Returned #{type} #{data} from Noah server #{noah_url}"
       output = JSON.parse(response)
+      if type == "service"
+        output.values.each do |hosts|
+          hosts.values.each do |host|
+            begin
+              host['data'] = JSON.parse(host['data'])
+            rescue JSON::ParserError => e
+              # Leave non-json data as is
+            end
+          end
+        end
+      end
       output
     when 404
       Puppet.info "noah_get(): No #{type} #{data} available on Noah server #{noah_url}"
